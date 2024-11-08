@@ -3,9 +3,15 @@ from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
 from db.dependencies import get_db
-from schemas import UserCreate, UserResponse
-from db.crud import create_user, get_user_by_email
+from jwtS.workToken import create_access_token, verify_token
+from schemas import UserCreate, UserResponse, UserLogin
+from db.crud import *
 from db.db import init_db
+from fastapi.security import OAuth2PasswordBearer
+from passlib.context import CryptContext
+import bcrypt
+
+
 
 
 app = FastAPI(
@@ -24,6 +30,9 @@ app.add_middleware(
 
 #INNIT DB
 init_db()
+#overovanie hesiel
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 
 @app.get("/")
@@ -32,12 +41,49 @@ async def root():
 
 @app.post("/api/register", response_model=UserResponse, tags=["User Registration"], summary="Register a new user")
 async def register(user: UserCreate, db: Session = Depends(get_db)):
-    # Check if email or username is already taken
     if get_user_by_email(db, user.email):
         raise HTTPException(status_code=400, detail="Email is already in use")
 
-    # Create the user
-    db_user = create_user(db, name=user.name, last_name=user.last_name, username=user.username, password=user.password,
-                          email=user.email)
+    # Generate salt and hash password using bcrypt
+    salt = bcrypt.gensalt()  # Generate a salt using bcrypt
+    hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), salt)  # Hash the password with the salt
 
-    return db_user  # Returns UserResponse schema
+    # Store both hashed password and salt in the database
+    db_user = create_user(db, name=user.name, last_name=user.last_name,
+                          username=user.username, password=hashed_password.decode('utf-8'),
+                          salt=salt.decode('utf-8'), email=user.email)
+
+    return db_user  # Return the created user
+
+
+@app.post("/api/login", tags=["User Authentication"], summary="Login a user")
+async def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = get_user_by_email(db, user.email)
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    salt = db_user.salt.encode('utf-8')
+    stored_hashed_password = db_user.password.encode('utf-8')
+    provided_hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), salt)
+
+    if provided_hashed_password != stored_hashed_password:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    access_token = create_access_token(data={"sub": db_user.email})  # 'sub' is the subject (email)
+
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/login")
+@app.get("/api/dashboard")
+async def dashboard(token: str = Depends(oauth2_scheme)):
+    # Validate the token
+    payload = verify_token(token)
+    user_email = payload.get("sub")  # Extract the 'sub' (email) from the token payload
+
+    # You can fetch the user from the database using the email if needed
+    # db_user = get_user_by_email(db, user_email)
+
+    return {"message": f"Welcome to the dashboard, {user_email}!"}

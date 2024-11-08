@@ -10,6 +10,7 @@ class User(Base):
     username = Column(String, index=True, unique=True)
     password = Column(String, index=True)
     email = Column(String, unique=True, index=True)
+    salt = Column(String, index=True)
 
     def __repr__(self):
-        return f"<User(id={self.id}, name='{self.name}', last_name='{self.last_name}', username='{self.username}', email='{self.email}')>"
+        return f"<User(id={self.id}, name='{self.name}', last_name='{self.last_name}', username='{self.username}', email='{self.email}',salt='{self.salt}')>"
