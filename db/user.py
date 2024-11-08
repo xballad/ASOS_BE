@@ -1,7 +1,5 @@
 from sqlalchemy import Column, Integer, String
-
-from db import Base
-
+from db.base import Base  # Import Base from base.py
 
 class User(Base):
     __tablename__ = "users"
@@ -15,6 +13,3 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, name='{self.name}', last_name='{self.last_name}', username='{self.username}', email='{self.email}')>"
-
-
-
