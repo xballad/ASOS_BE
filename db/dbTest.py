@@ -1,7 +1,7 @@
 
 from db import SessionLocal, engine
 import user
-from crud import create_user, get_users, update_user_name, update_user_last_name, update_user_email, \
+from db.crud import create_user, get_users, update_user_name, update_user_last_name, update_user_email, \
     update_user_username, update_user_password, delete_user, get_user_by_id
 
 # Run tests
