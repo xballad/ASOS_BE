@@ -3,12 +3,14 @@ from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
 from db.dependencies import get_db
+from jwtS.workToken import create_access_token, verify_token
 from schemas import UserCreate, UserResponse, UserLogin
 from db.crud import *
 from db.db import init_db
-
+from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 import bcrypt
+
 
 
 
@@ -30,6 +32,8 @@ app.add_middleware(
 init_db()
 #overovanie hesiel
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
 
 @app.get("/")
 async def root():
@@ -66,4 +70,20 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     if provided_hashed_password != stored_hashed_password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    return {"message": "Login successful"}
+    access_token = create_access_token(data={"sub": db_user.email})  # 'sub' is the subject (email)
+
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/login")
+@app.get("/api/dashboard")
+async def dashboard(token: str = Depends(oauth2_scheme)):
+    # Validate the token
+    payload = verify_token(token)
+    user_email = payload.get("sub")  # Extract the 'sub' (email) from the token payload
+
+    # You can fetch the user from the database using the email if needed
+    # db_user = get_user_by_email(db, user_email)
+
+    return {"message": f"Welcome to the dashboard, {user_email}!"}
