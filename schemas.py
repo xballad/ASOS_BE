@@ -18,3 +18,7 @@ class UserResponse(UserBase):
 
     class Config:
         orm_mode = True
+
+class UserLogin(BaseModel):
+    email: EmailStr = Field(..., example="johndoe@example.com")  # Using email for login
+    password: str = Field(..., example="Password123")
