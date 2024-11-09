@@ -1,8 +1,12 @@
-
 from db import SessionLocal, engine
-import user
+import db.user
+import db.team
+import db.task
+import db.task_spec
+
 from db.crud import create_user, get_users, update_user_name, update_user_last_name, update_user_email, \
-    update_user_username, update_user_password, delete_user, get_user_by_id
+    update_user_username, update_user_password, delete_user, get_user_by_id, \
+    create_team, create_task, get_teams, get_tasks
 
 # Run tests
 
@@ -32,6 +36,19 @@ all_users = get_users(db)
 print(f"All Users: {all_users}")
 
 # Delete the user
-deleted_user = delete_user(db, new_user.id)
-print(f"Deleted User: {deleted_user}")
+# deleted_user = delete_user(db, new_user.id)
+# print(f"Deleted User: {deleted_user}")
 
+# Create a new team
+new_team = create_team(db, name="Development", description="Development Team")
+print(f"Created Team: {new_team}")
+
+# Create a task assigned to the new team
+new_task = create_task(db, title="Code Review", description="Review the latest code changes", team_id=new_team.id)
+print(f"Created Task: {new_task}")
+
+# Retrieve teams and tasks to check everything is working
+teams = get_teams(db)
+tasks = get_tasks(db)
+print("Teams:", teams)
+print("Tasks:", tasks)
