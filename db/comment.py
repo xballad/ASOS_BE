@@ -17,3 +17,5 @@ class Comment(Base):
 
     def __repr__(self):
         return f"<Comment(id={self.id}, task_spec_id='{self.task_spec_id}', text='{self.text}',user='{self.user_username}' )>"
+
+
