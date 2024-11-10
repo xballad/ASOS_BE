@@ -1,10 +1,12 @@
+from typing import List
+
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
 from db.dependencies import get_db
 from jwtS.workToken import create_access_token, verify_token
-from schemas import UserCreate, UserResponse, UserLogin, CreateTask
+from schemas import UserCreate, UserResponse, UserLogin, CreateTask, GetListOfTasksForUser, TaskWithSpec
 from db.crud import *
 from db.db import init_db
 from fastapi.security import OAuth2PasswordBearer
@@ -102,3 +104,33 @@ async def create_task_ep(taskform : CreateTask,db: Session = Depends(get_db)):
                                      description=taskform.description)
 
     return new_task
+
+
+@app.post("/api/get/user/tasks", response_model=List[TaskWithSpec], tags=["USER Task Listing"],
+            summary="List all tasks")
+async def list_tasks(frompage: GetListOfTasksForUser, db: Session = Depends(get_db)):
+    # Find the user by email
+    active_user = get_user_by_email(db, frompage.email_user)
+
+    if not active_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get tasks for this user
+    tasks = get_tasks_by_user(db, active_user.id)
+
+    # Prepare the list of tasks with specifications
+    task_with_spec_list = []
+    for task in tasks:
+        task_spec = get_task_spec_by_task_id(db, task.id)
+        task_with_spec_list.append({
+            "id": task.id,
+            "title": task.title,
+            "status_task": task.status_task,
+            "description": task_spec.description if task_spec else None,
+            "datetime_of_creation": task.datetime_of_creation,
+        })
+
+    return task_with_spec_list
+
+
+
