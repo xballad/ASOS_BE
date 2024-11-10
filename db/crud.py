@@ -194,6 +194,9 @@ def get_task_specs(db: Session, skip: int = 0, limit: int = 100):
 def get_task_spec_by_id(db: Session, task_spec_id: int):
     return db.query(TaskSpec).filter(TaskSpec.id == task_spec_id).first()
 
+def get_task_spec_by_task_id(db: Session, task_id: int):
+    return db.query(TaskSpec).filter(TaskSpec.task_id == task_id).first()
+
 
 def update_task_spec(db: Session, task_spec_id: int, description: str):
     db_task_spec = db.query(TaskSpec).filter(TaskSpec.id == task_spec_id).first()
