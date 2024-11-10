@@ -28,3 +28,5 @@ class Task(Base):
     task_spec = relationship("TaskSpec", back_populates="task", uselist=False)
     def __repr__(self):
         return f"<Task(id={self.id}, title='{self.title}', team_id='{self.team_id}')>"
+
+
