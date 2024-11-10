@@ -1,3 +1,5 @@
+from tkinter.scrolledtext import example
+
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -22,3 +24,11 @@ class UserResponse(UserBase):
 class UserLogin(BaseModel):
     email: EmailStr = Field(..., example="johndoe@example.com")  # Using email for login
     password: str = Field(..., example="Password123")
+
+class CreateTask(BaseModel):
+    email_creator: EmailStr = Field(..., example="johndoe@example.com")  # Using email for login
+    title: str = Field(..., example="Nazov tasku")
+    description : str = Field(..., example="Description tasku")
+    status_task: str = Field(..., example="Faza tasku")
+    email_assigned: EmailStr = Field(..., example="johndoe@example.com")
+    team_assigned: int = Field(..., example="Nazov teamu")
