@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from db.user import User
 from db.task import Task
 from db.team import Team
+from db.comment import Comment
 from db.task_spec import TaskSpec
 def create_user(db: Session, name: str, last_name: str, username: str, password: str, email: str, salt: str):
     db_user = User(name=name, last_name=last_name, username=username, password=password, email=email, salt=salt)
@@ -211,3 +212,48 @@ def delete_task_spec(db: Session, task_spec_id: int):
         db.commit()
         return db_task_spec
     return None
+
+
+def create_comment(db: Session, text: str, task_spec_id: int, user_username: str):
+    new_comment = Comment(text=text, task_spec_id=task_spec_id, user_username=user_username)
+    db.add(new_comment)
+    db.commit()
+    db.refresh(new_comment)
+    return new_comment
+
+
+def get_comments(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(Comment).offset(skip).limit(limit).all()
+
+
+def get_comment_by_id(db: Session, comment_id: int):
+    return db.query(Comment).filter(Comment.id == comment_id).first()
+
+
+def get_comment_by_id(db: Session, comment_id: int):
+    return db.query(Comment).filter(Comment.id == comment_id).first()
+
+
+
+def update_comment_text(db: Session, comment_id: int, new_text: str):
+    comment = db.query(Comment).filter(Comment.id == comment_id).first()
+    if comment:
+        comment.text = new_text
+        db.commit()
+        db.refresh(comment)
+        return comment
+    return None
+
+
+
+def delete_comment(db: Session, comment_id: int):
+    comment = db.query(Comment).filter(Comment.id == comment_id).first()
+    if comment:
+        db.delete(comment)
+        db.commit()
+        return comment
+    return None
+
+
+def get_comments_by_username(db: Session, username: str, skip: int = 0, limit: int = 100):
+    return db.query(Comment).filter(Comment.user_username == username).offset(skip).limit(limit).all()

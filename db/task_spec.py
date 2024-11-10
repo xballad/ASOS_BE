@@ -14,6 +14,7 @@ class TaskSpec(Base):
     task_id = Column(Integer, ForeignKey("tasks.id"))
 
     task = relationship("Task", back_populates="task_spec", uselist=False)
+    comments = relationship("Comment", back_populates="task_spec")
 
     def __repr__(self):
-        return f"<TaskSpec(id={self.id}, task_id='{self.task_id}', details='{self.details}')>"
+        return f"<TaskSpec(id={self.id}, task_id='{self.task_id}', description='{self.description}')>"
