@@ -47,6 +47,9 @@ class TaskWithSpec(BaseModel):
     description: Optional[str] = Field(None, example="Popis")  # Make description optional
     datetime_of_creation: datetime = Field(..., example="cas ?")
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr = Field(..., example="johndoe@example.com")
+
 class TeamBase(BaseModel):
     name: str = Field(..., example="Engineering Team")
 

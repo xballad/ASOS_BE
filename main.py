@@ -1,3 +1,5 @@
+import string
+
 from typing import List
 
 from fastapi import FastAPI, HTTPException, Depends
@@ -6,15 +8,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from db.dependencies import get_db
 from jwtS.workToken import create_access_token, verify_token
-from schemas import UserCreate, UserResponse, UserLogin, CreateTask, GetListOfTasksForUser, TaskWithSpec
+from schemas import UserCreate, UserResponse, UserLogin, CreateTask, GetListOfTasksForUser, TaskWithSpec, \
+    ForgotPasswordRequest
 from db.crud import *
 from db.db import init_db
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 import bcrypt
-
-
-
+import random
+from scripts.scriptMail import send_email
 
 app = FastAPI(
     title="Task Managment APP",
@@ -75,6 +77,29 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": db_user.email})  # 'sub' is the subject (email)
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/forgot-password", tags=["User"])
+async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = get_user_by_email(db, request.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+    salt = bcrypt.gensalt()  # Generate a salt using bcrypt
+    hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), salt)  # Hash the password with the salt
+
+    update_user_password(db,
+                         user_id=user.id,
+                         password=hashed_password.decode('utf-8'))
+
+    update_user_salt(db,
+                     user_id=user.id,
+                     salt=salt.decode('utf-8'))
+
+
+    send_email(to_email=user.email, new_password=new_password)
+
+    return {"message": "New password has been sent to your email."}
 
 
 
