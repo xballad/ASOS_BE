@@ -78,6 +78,15 @@ def update_user_password(db: Session, user_id: int, password: str):
         return db_user
     return None
 
+def update_user_salt(db: Session, user_id: int, salt: str):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user:
+        db_user.salt = salt
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    return None
+
 
 def delete_user(db: Session, user_id: int):
     db_user = db.query(User).filter(User.id == user_id).first()
