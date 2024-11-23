@@ -8,8 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from db.dependencies import get_db
 from jwtS.workToken import create_access_token, verify_token
-from schemas import UserCreate, UserResponse, UserLogin, CreateTask, GetListOfTasksForUser, TaskWithSpec, \
-    ForgotPasswordRequest
+from schemas import *
 from db.crud import *
 from db.db import init_db
 from fastapi.security import OAuth2PasswordBearer
@@ -157,5 +156,25 @@ async def list_tasks(frompage: GetListOfTasksForUser, db: Session = Depends(get_
 
     return task_with_spec_list
 
+@app.post("/api/user/changepassword", tags=["User Change Password"], summary="Change password")
+async def changing_password(frompage: GetChangeForm, db: Session = Depends(get_db)):
+    print(frompage)
+    db_user = get_user_by_email(db, frompage.emailUser)
+
+    if not db_user:
+        raise HTTPException(status_code=406, detail="User not found")
 
 
+    salt = db_user.salt.encode('utf-8')
+    stored_hashed_password = db_user.password.encode('utf-8')
+    provided_hashed_password = bcrypt.hashpw(frompage.oldPassword.encode('utf-8'), salt)
+
+    if provided_hashed_password != stored_hashed_password:
+        raise HTTPException(status_code=401, detail="Old password is inccorect")
+
+    new_password = bcrypt.hashpw(frompage.newPassword.encode('utf-8'), salt)
+    update_user_password(db = db,
+                         user_id=db_user.id,
+                         password= new_password.decode('utf-8'))
+
+    return {"message": "Password has been changed successfully."}

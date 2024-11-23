@@ -150,3 +150,9 @@ class CommentResponse(CommentBase):
 
 class TaskSpecWithComments(TaskSpecResponse):
     comments: List[CommentResponse]
+
+
+class GetChangeForm(BaseModel):
+    emailUser: EmailStr = Field(..., example = "email@email.sk")
+    oldPassword: str = Field(..., example = "heslo")
+    newPassword: str = Field(..., example = "heslo")
