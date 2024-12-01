@@ -269,3 +269,9 @@ def delete_comment(db: Session, comment_id: int):
 
 def get_comments_by_username(db: Session, username: str, skip: int = 0, limit: int = 100):
     return db.query(Comment).filter(Comment.user_username == username).offset(skip).limit(limit).all()
+
+def get_teams_for_user(db: Session, user_id: int):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return None
+    return user.teams  # Access the 'teams' relationship

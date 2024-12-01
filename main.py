@@ -6,6 +6,7 @@ from urllib.request import Request
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.testing.pickleable import EmailUser
 from starlette.responses import RedirectResponse
 
 from db.dependencies import get_db
@@ -43,16 +44,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
-
-@app.middleware("http")
-async def enforce_https(request: Request, call_next):
-    if request.url.scheme != "https":
-        url = request.url.replace(scheme="https")
-        return RedirectResponse(url=str(url))
-    response = await call_next(request)
-    return response
-
 
 @app.post("/api/register", response_model=UserResponse, tags=["User Registration"], summary="Register a new user")
 async def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -190,3 +181,87 @@ async def changing_password(frompage: GetChangeForm, db: Session = Depends(get_d
                          password= new_password.decode('utf-8'))
 
     return {"message": "Password has been changed successfully."}
+
+
+@app.post("/api/create-team", tags=["Create team"], summary="Create a new team")
+async def creation_of_team(frompage: CreationTeamForm, db: Session = Depends(get_db)):
+    # creation of team
+    team_name = frompage.teamName
+    created_team = create_team(db=db,name=team_name)
+
+    #working with potentional members
+    members = frompage.members
+    existing_members = []
+    non_existing_members = []
+
+    for email in members:
+        user = get_user_by_email(db, email)
+        if user:
+            existing_members.append(user.id)
+            add_user_to_team(db=db,user_id=user.id,team_id=created_team.id)
+        else:
+            non_existing_members.append(email)
+
+    if non_existing_members:
+        raise HTTPException(
+            status_code=404,
+            detail=f"These members do not exist: {', '.join(non_existing_members)}"
+        )
+
+    return "Team has been created successfully."
+
+@app.post("/api/getTeamsForMembers", tags=["Teams"], summary="Get teams for a user")
+async def get_teams_for_user_endpoint(emailuser: GetListOfTasksForUser, db: Session = Depends(get_db)):
+    db_user = get_user_by_email(db,emailuser.email_user)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    teams = get_teams_for_user(db = db,user_id=db_user.id)
+    if teams is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not teams:
+        raise HTTPException(status_code=404, detail="No teams found for the user")
+    return teams
+
+
+@app.get("/api/teams/members/{team_id}")
+async def get_team_members(team_id: int, db: Session = Depends(get_db)):
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return [{"id": user.id, "email": user.email} for user in team.users]
+
+@app.put("/api/teams/update/members")
+async def update_team(frompage: UpdateTeamFrom, db: Session = Depends(get_db)):
+    team_id = frompage.team_id
+    new_member_emails = frompage.members  # This will be the updated list of member emails
+
+    db_team = get_team_by_id(db=db,team_id=team_id)
+
+    if not db_team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    # Handle team name change
+    if frompage.team_name != db_team.name:
+        update_team_name(db=db,team_id=team_id,name=frompage.team_name)
+
+    current_members =  get_users_in_team(db=db,team_id=team_id)
+
+    current_member_emails = [user.email for user in current_members]
+
+    for email in new_member_emails:
+        if email not in current_member_emails:
+            db_user = get_user_by_email(db=db, email=email)
+            if db_user:
+                add_user_to_team(db=db,user_id=db_user.id,team_id=team_id)
+            else:
+                raise HTTPException(status_code=404, detail=f"User {email} not found")
+
+    # Check for removed members
+    for email in current_member_emails:
+        if email not in new_member_emails:
+            db_user = get_user_by_email(db=db, email=email)
+            if db_user:
+                remove_user_from_team(db=db,user_id=db_user.id,team_id=team_id)
+
+    return {"message": "Team updated successfully", "team": db_team}
