@@ -28,7 +28,7 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200"],  # Allows Angular app to access backend
+    allow_origins=["*"],  # Allows Angular app to access backend
     allow_credentials=True,
     allow_methods=["*"],  # Allows all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allows all headers
@@ -44,6 +44,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+@app.middleware("http")
+async def enforce_https(request: Request, call_next):
+    if request.url.scheme != "https":
+        url = request.url.replace(scheme="https")
+        return RedirectResponse(url=str(url))
+    response = await call_next(request)
+    return response
+
 
 @app.post("/api/register", response_model=UserResponse, tags=["User Registration"], summary="Register a new user")
 async def register(user: UserCreate, db: Session = Depends(get_db)):
