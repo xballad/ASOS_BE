@@ -1,5 +1,4 @@
 from datetime import datetime
-from tkinter.scrolledtext import example
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
