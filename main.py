@@ -1,10 +1,12 @@
 import string
 
 from typing import List
+from urllib.request import Request
 
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import RedirectResponse
 
 from db.dependencies import get_db
 from jwtS.workToken import create_access_token, verify_token
@@ -41,6 +43,16 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+
+@app.middleware("http")
+async def enforce_https(request: Request, call_next):
+    if request.url.scheme != "https":
+        url = request.url.replace(scheme="https")
+        return RedirectResponse(url=str(url))
+    response = await call_next(request)
+    return response
+
 
 @app.post("/api/register", response_model=UserResponse, tags=["User Registration"], summary="Register a new user")
 async def register(user: UserCreate, db: Session = Depends(get_db)):
