@@ -133,7 +133,8 @@ async def create_task_ep(taskform : CreateTask,db: Session = Depends(get_db)):
     new_task = create_task(db=db,
                            title=taskform.title,
                            status_task=taskform.status_task,
-                           user_id=task_creator.id)
+                           user_id=task_creator.id,
+                           team_id=taskform.team_assigned)
 
     new_task_spec = create_task_spec(db=db,
                                      task_id=new_task.id,
