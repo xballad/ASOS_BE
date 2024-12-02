@@ -143,19 +143,20 @@ async def create_task_ep(taskform : CreateTask,db: Session = Depends(get_db)):
     return new_task
 
 
-@app.post("/api/get/user/tasks", response_model=List[TaskWithSpec], tags=["USER Task Listing"],
-            summary="List all tasks")
-async def list_tasks(frompage: GetListOfTasksForUser, db: Session = Depends(get_db)):
-    # Find the user by email
+@app.post("/api/get/user/tasks", response_model=List[TaskWithSpec], tags=["USER Task Listing"], summary="List tasks for user")
+async def list_tasks(frompage: GetListOfTasksForUser, team_id: Optional[int] = None, db: Session = Depends(get_db)):
     active_user = get_user_by_email(db, frompage.email_user)
-
     if not active_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Get tasks for this user
-    tasks = get_tasks_by_user(db, active_user.id)
+    if team_id:
+        # Check if user is in the specified team
+        if not is_user_in_team(db, active_user.id, team_id):
+            raise HTTPException(status_code=403, detail="User is not a member of this team")
+        tasks = get_tasks_by_user_and_team(db, active_user.id, team_id)
+    else:
+        tasks = get_tasks_by_user(db, active_user.id)
 
-    # Prepare the list of tasks with specifications
     task_with_spec_list = []
     for task in tasks:
         task_spec = get_task_spec_by_task_id(db, task.id)
@@ -165,6 +166,7 @@ async def list_tasks(frompage: GetListOfTasksForUser, db: Session = Depends(get_
             "status_task": task.status_task,
             "description": task_spec.description if task_spec else None,
             "datetime_of_creation": task.datetime_of_creation,
+            "team_id": task.team_id
         })
 
     return task_with_spec_list
@@ -285,3 +287,59 @@ def task_status_update(task_info: UpdateTask, db: Session = Depends(get_db)):
 
     update_task_status(db=db,task_id=task_info.task_id, new_status=task_info.status)
     return {"message": "Task updated successfully"}
+
+
+@app.get("/api/get/tasks/{task_id}", response_model=TaskBaseAlternative)
+def get_task_by_id_endpoint(task_id: int, db: Session = Depends(get_db)):
+    # Query for the task based on the task_id
+    task = get_task_by_id(db=db,task_id=task_id)
+
+    print("task")
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+
+
+
+    return task
+
+
+@app.post("/api/get/user/team/tasks", response_model=List[TaskWithSpec], tags=["USER Team Task Listing"])
+async def list_team_tasks(frompage: GetListOfTasksForUserAlternative, db: Session = Depends(get_db)):
+    active_user = get_user_by_email(db, frompage.email_user)
+    if not active_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if frompage.team_id:
+        # Fetch tasks for the specific team
+        tasks = get_tasks_by_team(db, frompage.team_id)
+    else:
+        # Fetch tasks for all teams the user is a member of
+        user_teams = get_teams_for_user(db, active_user.id)
+        team_ids = [team.id for team in user_teams]
+        tasks = get_tasks_by_teams(db, team_ids)
+
+    task_with_spec_list = []
+    for task in tasks:
+        task_spec = get_task_spec_by_task_id(db, task.id)
+        task_with_spec_list.append(TaskWithSpec(
+            id=task.id,
+            title=task.title,
+            status_task=task.status_task,
+            description=task_spec.description if task_spec else None,
+            datetime_of_creation=task.datetime_of_creation,
+            team_id=task.team_id
+        ))
+
+    return task_with_spec_list
+
+
+@app.post("/api/comments", status_code=201)
+async def add_comment(comment: CommentCreate, db: Session = Depends(get_db)):
+    task_spec = get_task_spec_by_task_id(db, comment.task_spec_id)
+    if not task_spec:
+        raise HTTPException(status_code=404, detail="Task specification not found")
+
+    new_comment = create_comment(db, text=comment.text, task_spec_id=comment.task_spec_id,
+                                 user_username=comment.user_username)
+    return new_comment
