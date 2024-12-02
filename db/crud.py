@@ -1,8 +1,9 @@
+from typing import List
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from db.user import User
 from db.task import Task
-from db.team import Team
+from db.team import Team, team_user_association
 from db.comment import Comment
 from db.task_spec import TaskSpec
 def create_user(db: Session, name: str, last_name: str, username: str, password: str, email: str, salt: str):
@@ -172,6 +173,15 @@ def create_task(db: Session, title: str, status_task: str, user_id: int = None, 
     db.refresh(task)
     return task
 
+def update_task_status(db: Session, task_id: int, new_status: str,skip: int = 0, limit: int = 100):
+    db_task = db.query(Task).filter(Task.id == task_id).first()
+    if db_task:
+        db_task.status_task = new_status
+        db.commit()
+        db.refresh(db_task)
+        return db_task
+    return None
+
 def get_tasks_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     return db.query(Task).filter(Task.user_id == user_id).offset(skip).limit(limit).all()
 
@@ -275,3 +285,17 @@ def get_teams_for_user(db: Session, user_id: int):
     if not user:
         return None
     return user.teams  # Access the 'teams' relationship
+
+def is_user_in_team(db: Session, user_id: int, team_id: int) -> bool:
+    return db.query(team_user_association).filter(
+        team_user_association.c.user_id == user_id,
+        team_user_association.c.team_id == team_id
+    ).first() is not None
+
+def get_tasks_by_user_and_team(db: Session, user_id: int, team_id: int) -> List[Task]:
+    return db.query(Task).filter(Task.user_id == user_id, Task.team_id == team_id).all()
+
+
+def get_tasks_by_teams(db: Session, team_ids: List[int]) -> List[Task]:
+    return db.query(Task).filter(Task.team_id.in_(team_ids)).all()
+

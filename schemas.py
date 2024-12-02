@@ -1,7 +1,8 @@
 from datetime import datetime
+from tkinter.scrolledtext import example
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 from typing import List, Optional
 from datetime import datetime
 
@@ -42,6 +43,9 @@ class CreateTask(BaseModel):
 class GetListOfTasksForUser(BaseModel):
     email_user: EmailStr = Field(..., example="johndoe@example.com")  # Using email for login
 
+class GetListOfTasksForUserAlternative(BaseModel):
+    email_user: EmailStr = Field(..., example="johndoe@example.com")  # Using email for login
+    team_id : int = Field(..., exmample="7")
 
 class TaskWithSpec(BaseModel):
     id: int = Field(..., example="Dake cislo")
@@ -49,6 +53,7 @@ class TaskWithSpec(BaseModel):
     status_task: str = Field(..., example="Status Tasku")
     description: Optional[str] = Field(None, example="Popis")  # Make description optional
     datetime_of_creation: datetime = Field(..., example="cas ?")
+    team_id: Optional[int] = None
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -176,3 +181,44 @@ class UpdateTeamFrom(BaseModel):
     team_id: int
     team_name: str
     members: List[str] = Field(..., example="Zoznam uzivatelov v tyme")
+
+class UpdateTask(BaseModel):
+    task_id : int
+    status : str
+
+
+class CommentBaseAlternative(BaseModel):
+        id: int
+        text: str
+        datetime_of_creation: datetime
+        user_username: str
+
+        class Config:
+            orm_mode = True
+
+class TaskSpecBaseAlternative(BaseModel):
+        id: int
+        description: str
+        timestamp_of_change: datetime
+        comments: List[CommentBaseAlternative] = []
+
+        class Config:
+            orm_mode = True
+
+class UserBaseAlternative(BaseModel):
+    id: int
+    username: str
+    email: str
+
+    class Config:
+        orm_mode = True
+
+class TaskBaseAlternative(BaseModel):
+    id: int
+    title: str
+    datetime_of_creation: datetime
+    status_task: str
+    task_spec: TaskSpecBaseAlternative
+    user: Optional[UserBaseAlternative] = None
+
+
