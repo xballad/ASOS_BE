@@ -274,3 +274,13 @@ async def update_team(frompage: UpdateTeamFrom, db: Session = Depends(get_db)):
                 remove_user_from_team(db=db,user_id=db_user.id,team_id=team_id)
 
     return {"message": "Team updated successfully", "team": db_team}
+
+
+@app.put("/api/task/update")
+def task_status_update(task_info: UpdateTask, db: Session = Depends(get_db)):
+    db_task = get_task_by_id(db=db,task_id=task_info.task_id)
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    update_task_status(db=db,task_id=task_info.task_id, new_status=task_info.status)
+    return {"message": "Task updated successfully"}

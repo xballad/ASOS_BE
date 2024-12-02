@@ -172,6 +172,15 @@ def create_task(db: Session, title: str, status_task: str, user_id: int = None, 
     db.refresh(task)
     return task
 
+def update_task_status(db: Session, task_id: int, new_status: str,skip: int = 0, limit: int = 100):
+    db_task = db.query(Task).filter(Task.id == task_id).first()
+    if db_task:
+        db_task.status_task = new_status
+        db.commit()
+        db.refresh(db_task)
+        return db_task
+    return None
+
 def get_tasks_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     return db.query(Task).filter(Task.user_id == user_id).offset(skip).limit(limit).all()
 

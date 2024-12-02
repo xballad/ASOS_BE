@@ -176,3 +176,7 @@ class UpdateTeamFrom(BaseModel):
     team_id: int
     team_name: str
     members: List[str] = Field(..., example="Zoznam uzivatelov v tyme")
+
+class UpdateTask(BaseModel):
+    task_id : int
+    status : str
