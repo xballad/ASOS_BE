@@ -1,5 +1,5 @@
 # ASOS_BE
-## Tymovi projekt
+## Timovy projekt
 
 Tento backend je postavený na frameworku FastAPI a poskytuje REST API na správu používateľov a komunikáciu s databázou. Obsahuje implementáciu registrácie, prihlasovania a spracovania údajov uložených v databáze.
 
@@ -10,6 +10,11 @@ Tento backend je postavený na frameworku FastAPI a poskytuje REST API na správ
 - Komunikácia s databázou: Zabezpečená správa údajov pomocou moderných databázových nástrojov.
 - REST API: Štruktúrované API umožňujúce integráciu s frontend aplikáciami.
 
+Tento repozitár obsahuje databázové modely, schémy a operácie CRUD pre task management aplikáciu. 
+Implementácia je postavená pomocou SQLAlchemy pre databázu ORM a Pydantic pre validáciu vstupu a serializáciu. 
+Toto nastavenie je navrhnuté tak, aby bezpečne a efektívne spracovávalo úlohy, používateľov, tímy, 
+komentáre a špecifikácie úloh. Použili sme databázu SQLite.
+
 ## Lokálne rozbehanie
 Pre lokálne rozbehanie je potreba zadať príkaz nižšie do konzoly
 
@@ -17,14 +22,14 @@ Pre lokálne rozbehanie je potreba zadať príkaz nižšie do konzoly
 uvicorn main:app --host 0.0.0.0 --port 8000 --ssl-keyfile=keys/selfsigned.key --ssl-certfile=keys/selfsigned.crt
 ```
 
-Násladne nám backend bude počúvať na porte https://localhost:8000
+Následne nám backend bude počúvať na porte https://localhost:8000
 
 ## Docker rozbehanie
 
 Aby sa aplikácia dala spustiť v dockeri je potreba vytvoriť si priečinok a doňho naclonovať
 obidva repozitáre [repo-backend](https://github.com/xballad/ASOS_BE) a [repo-frontend](https://github.com/xballad/ASOS_BE)
 
-Následne treba do konzoly byt v priecinku asos-fe a zadať príkaz
+Následne treba do konzoly v priecinku asos-fe a zadať príkaz
 ```
 docker-compose up
 ```
